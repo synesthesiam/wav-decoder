@@ -11,17 +11,38 @@ int main() {
   wav_decoder::WAVDecoder decoder(buffer);
 
   std::size_t bytes_to_read = decoder.bytes_needed();
+  std::size_t bytes_to_skip = decoder.bytes_to_skip();
+  std::size_t buffer_offset = 0;
+  std::size_t bytes_read = 0;
 
   wav_decoder::WAVDecoderResult result = wav_decoder::WAV_DECODER_SUCCESS_NEXT;
   while (result == wav_decoder::WAV_DECODER_SUCCESS_NEXT) {
-    std::size_t bytes_read =
-        fread(buffer, 1, std::min(buffer_size, bytes_to_read), stdin);
+    // Skip unneeded data
+    if (bytes_to_skip > 0) {
+      bytes_read =
+          fread(buffer, 1, std::min(bytes_to_skip, buffer_size), stdin);
+
+      if (bytes_read == 0) {
+        std::cerr << "Out of data" << std::endl;
+        return 1;
+      }
+
+      bytes_to_skip -= bytes_read;
+      continue;
+    }
+
+    // Read needed data
+    bytes_read =
+      fread(buffer + buffer_offset, 1,
+              std::min(bytes_to_read, buffer_size - buffer_offset), stdin);
 
     if (bytes_read == 0) {
-      break;
+      std::cerr << "Out of data" << std::endl;
+      return 1;
     }
 
     bytes_to_read -= bytes_read;
+    buffer_offset += bytes_read;
 
     if (bytes_to_read > 0) {
       continue;
@@ -32,7 +53,9 @@ int main() {
       break;
     }
 
+    bytes_to_skip = decoder.bytes_to_skip();
     bytes_to_read = decoder.bytes_needed();
+    buffer_offset = 0;
   }
 
   if (result == wav_decoder::WAV_DECODER_SUCCESS_IN_DATA) {

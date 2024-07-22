@@ -3,6 +3,8 @@
 namespace wav_decoder {
 
 WAVDecoderResult WAVDecoder::next() {
+  this->bytes_to_skip_ = 0;
+
   switch (this->state_) {
   case WAV_DECODER_BEFORE_RIFF: {
     this->chunk_name_ = std::string((const char *)this->buffer_, 4);
@@ -48,18 +50,19 @@ WAVDecoderResult WAVDecoder::next() {
       this->bytes_needed_ = this->chunk_bytes_left_;
     } else {
       // Skip over chunk
-      this->state_ = WAV_DECODER_BEFORE_FMT_SKIP_CHUNK;
-      this->bytes_needed_ = this->chunk_bytes_left_;
+      // this->state_ = WAV_DECODER_BEFORE_FMT_SKIP_CHUNK;
+      this->bytes_to_skip_ = this->chunk_bytes_left_;
+      this->bytes_needed_ = 8;
     }
     break;
   }
 
-  case WAV_DECODER_BEFORE_FMT_SKIP_CHUNK: {
-    // Next chunk header
-    this->state_ = WAV_DECODER_BEFORE_FMT;
-    this->bytes_needed_ = 8; // chunk name + size
-    break;
-  }
+    // case WAV_DECODER_BEFORE_FMT_SKIP_CHUNK: {
+    //   // Next chunk header
+    //   this->state_ = WAV_DECODER_BEFORE_FMT;
+    //   this->bytes_needed_ = 8; // chunk name + size
+    //   break;
+    // }
 
   case WAV_DECODER_IN_FMT: {
     /**
@@ -97,17 +100,18 @@ WAVDecoderResult WAVDecoder::next() {
     }
 
     // Skip over chunk
-    this->state_ = WAV_DECODER_BEFORE_DATA_SKIP_CHUNK;
-    this->bytes_needed_ = this->chunk_bytes_left_;
+    // this->state_ = WAV_DECODER_BEFORE_DATA_SKIP_CHUNK;
+    this->bytes_to_skip_ = this->chunk_bytes_left_;
+    this->bytes_needed_ = 8;
     break;
   }
 
-  case WAV_DECODER_BEFORE_DATA_SKIP_CHUNK: {
-    // Next chunk header
-    this->state_ = WAV_DECODER_BEFORE_DATA;
-    this->bytes_needed_ = 8; // chunk name + size
-    break;
-  }
+    // case WAV_DECODER_BEFORE_DATA_SKIP_CHUNK: {
+    //   // Next chunk header
+    //   this->state_ = WAV_DECODER_BEFORE_DATA;
+    //   this->bytes_needed_ = 8; // chunk name + size
+    //   break;
+    // }
 
   case WAV_DECODER_IN_DATA: {
     return WAV_DECODER_SUCCESS_IN_DATA;
