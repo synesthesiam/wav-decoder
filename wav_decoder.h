@@ -69,15 +69,27 @@ public:
   // Advance decoding:
   // 1. Check bytes_to_skip() first, and skip that many bytes.
   // 2. Read exactly bytes_needed() into the start of the buffer.
-  // 3. Run next() and loop to 1 until the result is WAV_DECODER_SUCCESS_IN_DATA.
+  // 3. Run next() and loop to 1 until the result is
+  // WAV_DECODER_SUCCESS_IN_DATA.
   // 4. Use chunk_bytes_left() to read the data samples.
   WAVDecoderResult next();
+
+  void reset() {
+    this->state_ = WAV_DECODER_BEFORE_RIFF;
+    this->bytes_to_skip_ = 0;
+    this->chunk_name_ = "";
+    this->chunk_bytes_left_ = 0;
+
+    this->sample_rate_ = 0;
+    this->num_channels_ = 0;
+    this->bits_per_sample_ = 0;
+  }
 
 protected:
   uint8_t *buffer_;
   WAVDecoderState state_ = WAV_DECODER_BEFORE_RIFF;
-  std::size_t bytes_needed_ = 8;  // chunk name + size
-  std::size_t bytes_to_skip_ = 0; // chunk name + size
+  std::size_t bytes_needed_ = 8; // chunk name + size
+  std::size_t bytes_to_skip_ = 0;
   std::string chunk_name_;
   std::size_t chunk_bytes_left_ = 0;
 
